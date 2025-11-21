@@ -4,10 +4,21 @@ echo "=========================================="
 echo " AWS EC2 Linux Initialization Script"
 echo "=========================================="
 
+# 1. 루트 사용자 변경 (간단하게 sudo -i 실행)
+if [ "$(id -u)" -ne 0 ]; then
+    # echo "현재 사용자가 루트가 아닙니다. 루트 권한을 얻기 위해 sudo -i를 실행합니다."
+    sudo -i
+    if [ $? -ne 0 ]; then
+        # echo "sudo -i 실행에 실패했습니다. sudo로 스크립트를 다시 실행합니다."
+        exec sudo bash "$0" "$@"
+        exit
+    fi
+fi
+
 # 2. Install Dependencies
 echo "[1/6] Installing Dependencies..."
 if command -v yum &>/dev/null; then
-    yum update -y
+    yum update -y && yum upgrade -y
     yum install -y git cronie jq
 else
     echo "Error: This script supports 'yum' package manager (Amazon Linux, RHEL, CentOS)."
@@ -29,21 +40,25 @@ echo "[3/6] Installing Docker & Docker Compose..."
 yum install -y docker
 usermod -aG docker ec2-user
 service docker start
+docker ps
 systemctl enable docker
 
 # ec2-user 권한 추가
 gpasswd -a $USER docker
 newgrp docker
 service docker restart
+docker ps
 
 # Install Docker Compose Plugin
 mkdir -p /usr/local/lib/docker/cli-plugins/
 curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+docker compose version
 
 # Alias for docker-compose
 echo "alias docker-compose='docker compose --compatibility \"\$@\"'" >> /etc/profile.d/docker-compose.sh
 source /etc/profile.d/docker-compose.sh
+docker-compose version
 
 # 5. AWS Configuration (Run as root from here)
 echo "Switching to root for AWS configuration and script generation..."
