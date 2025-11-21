@@ -47,6 +47,7 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 echo "alias docker-compose='docker compose --compatibility \"\$@\"'" >> /etc/profile.d/docker-compose.sh
 source /etc/profile.d/docker-compose.sh
 
+
 # 5. AWS Configuration
 echo "[4/6] Configuring AWS CLI..."
 if [ -f ~/.aws/credentials ]; then
@@ -56,6 +57,16 @@ if [ -f ~/.aws/credentials ]; then
     AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key)
     AWS_REGION=$(aws configure get region)
     AWS_REGION=${AWS_REGION:-ap-northeast-2}
+    
+    # Debug output (will be visible during script execution)
+    echo "Loaded AWS Access Key ID: ${AWS_ACCESS_KEY_ID:0:10}..." # Show first 10 chars only
+    echo "Loaded AWS Region: $AWS_REGION"
+    
+    # Verify credentials were loaded
+    if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+        echo "Warning: Could not load credentials from AWS CLI config."
+        echo "Please ensure AWS CLI is properly configured."
+    fi
 else
     read -p "Enter AWS Access Key ID: " AWS_ACCESS_KEY_ID < /dev/tty
     read -s -p "Enter AWS Secret Access Key: " AWS_SECRET_ACCESS_KEY < /dev/tty
@@ -177,6 +188,11 @@ EOF
 chmod +x /bin/auto-update-route53.sh
 
 # aws-service-boot.sh
+echo "Generating aws-service-boot.sh with credentials..."
+echo "  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:0:10}..."
+echo "  HOSTED_ZONE_ID: $HOSTED_ZONE_ID"
+echo "  DOMAIN: $DOMAIN_NAME"
+
 cat <<EOF > /bin/aws-service-boot.sh
 #!/bin/bash
 # Wrapper script to call auto-update-route53.sh with configured credentials
