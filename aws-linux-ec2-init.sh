@@ -51,7 +51,9 @@ source /etc/profile.d/docker-compose.sh
 echo "[4/6] Configuring AWS CLI..."
 if [ -f ~/.aws/credentials ]; then
     echo "AWS CLI is already configured. Skipping configuration..."
-    # Load region from config if possible, or default
+    # Load existing credentials and region
+    AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id)
+    AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key)
     AWS_REGION=$(aws configure get region)
     AWS_REGION=${AWS_REGION:-ap-northeast-2}
 else
