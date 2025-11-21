@@ -46,6 +46,9 @@ This is the main unified initialization script. It performs the following:
     *   Generates `/bin/auto-update-route53.sh`: Core logic for updating DNS.
     *   Generates `/bin/aws-service-boot.sh`: Wrapper script with saved credentials.
 
+> [!IMPORTANT]
+> **Docker Compose Version Note**: This script installs Docker Compose v2.39.1 (fixed version). Using the latest version may cause the error `compose build requires buildx 0.17 or later`. If you need a different version, modify the download URL in the script.
+
 #### Usage
 
 **Option 1: Quick Install (via curl)**
@@ -159,6 +162,9 @@ To automatically update Route53 on reboot, you can add the following to your EC2
 4.  **보조 스크립트 생성**:
     *   `/bin/auto-update-route53.sh`: DNS 업데이트를 위한 핵심 로직을 생성합니다.
     *   `/bin/aws-service-boot.sh`: 저장된 자격 증명을 사용하는 래퍼 스크립트를 생성합니다.
+
+> [!IMPORTANT]
+> **Docker Compose 버전 주의사항**: 이 스크립트는 Docker Compose v2.39.1 (고정 버전)을 설치합니다. 최신 버전 사용 시 `compose build requires buildx 0.17 or later` 오류가 발생할 수 있습니다. 다른 버전이 필요한 경우 스크립트의 다운로드 URL을 수정하세요.
 
 #### 사용법
 
