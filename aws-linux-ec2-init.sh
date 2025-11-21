@@ -207,6 +207,10 @@ EOF
 
 chmod +x /bin/aws-service-boot.sh
 
+# Add to root's crontab to run on reboot
+echo "Adding /bin/aws-service-boot.sh to crontab for automatic execution on boot..."
+(crontab -l 2>/dev/null | grep -v '/bin/aws-service-boot.sh'; echo "@reboot /bin/aws-service-boot.sh") | crontab -
+
 echo "=========================================="
 echo " Initialization Complete!"
 echo "=========================================="
@@ -216,9 +220,10 @@ echo "3. AWS CLI is configured."
 echo "4. Helper scripts created in /bin/:"
 echo "   - auto-update-route53.sh"
 echo "   - aws-service-boot.sh"
+echo "5. Crontab configured to run aws-service-boot.sh on reboot."
 echo ""
 echo "To update Route53 manually, run:"
 echo "  /bin/aws-service-boot.sh"
 echo ""
-echo "You can add this to User Data or crontab for auto-updates."
+echo "The script will automatically run on system boot."
 echo "=========================================="
