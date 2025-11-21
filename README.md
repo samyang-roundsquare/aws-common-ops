@@ -29,7 +29,7 @@ This is the main unified initialization script. It performs the following:
 
 Run the following command:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/samyang-roundsquare/aws-common-ops.git/refs/heads/main/aws-linux-ec2-init.sh | sh
+curl -fsSL https://raw.githubusercontent.com/samyang-roundsquare/aws-common-ops/refs/heads/main/aws-linux-ec2-init.sh | sh
 ```
 
 **Option 2: Manual Install**
@@ -120,7 +120,7 @@ To automatically update Route53 on reboot, you can add the following to your EC2
 
 다음 명령어를 실행합니다:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/samyang-roundsquare/aws-common-ops.git/refs/heads/main/aws-linux-ec2-init.sh | sh
+curl -fsSL https://raw.githubusercontent.com/samyang-roundsquare/aws-common-ops/refs/heads/main/aws-linux-ec2-init.sh | sh
 ```
 
 **옵션 2: 수동 설치**
