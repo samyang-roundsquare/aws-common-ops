@@ -37,17 +37,16 @@ systemctl start crond
 
 # 4. Install Docker & Docker Compose
 echo "[3/6] Installing Docker & Docker Compose..."
+amazon-linux-extras enable docker
 yum install -y docker
 usermod -aG docker ec2-user
 service docker start
-docker ps
 systemctl enable docker
 
 # ec2-user 권한 추가
-gpasswd -a $USER docker
+gpasswd -a ec2-user docker
 newgrp docker
 service docker restart
-docker ps
 
 # Install Docker Compose Plugin
 mkdir -p /usr/local/lib/docker/cli-plugins/
