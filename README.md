@@ -2,6 +2,29 @@
 
 This repository contains scripts to initialize an AWS EC2 instance (Amazon Linux/RHEL/CentOS) and automate Route53 DNS updates for dynamic IPs.
 
+## Prerequisites & Setup Guide
+
+Before running the script, ensure you have the following information:
+
+### 1. AWS Access Key ID & Secret Access Key
+1.  Log in to the **AWS Management Console**.
+2.  Navigate to **IAM (Identity and Access Management)**.
+3.  Go to **Users** and select your user (or create a new one).
+4.  Open the **Security credentials** tab.
+5.  Scroll down to **Access keys** and click **Create access key**.
+6.  Copy the **Access Key ID** and **Secret Access Key**.
+
+### 2. Domain Name
+*   This is the domain you want to use (e.g., `example.com` or `sub.example.com`).
+*   Ensure this domain is registered in **Route53** or another registrar.
+
+### 3. Hosted Zone ID
+1.  Navigate to **Route53** in the AWS Console.
+2.  Click on **Hosted zones**.
+3.  Click on the domain name you want to use.
+4.  Expand **Hosted zone details** in the dashboard.
+5.  Copy the **Hosted Zone ID** (e.g., `Z0123456789ABCDEF`).
+
 ## Scripts
 
 ### `aws-linux-ec2-init.sh`
@@ -92,6 +115,29 @@ To automatically update Route53 on reboot, you can add the following to your EC2
 # AWS EC2 초기화 및 Route53 자동화 (Korean)
 
 이 저장소는 AWS EC2 인스턴스(Amazon Linux/RHEL/CentOS)를 초기화하고 동적 IP에 대한 Route53 DNS 업데이트를 자동화하는 스크립트를 포함하고 있습니다.
+
+## 사전 준비 및 설정 가이드
+
+스크립트를 실행하기 전에 다음 정보를 준비해야 합니다:
+
+### 1. AWS Access Key ID 및 Secret Access Key
+1.  **AWS Management Console**에 로그인합니다.
+2.  **IAM (Identity and Access Management)**으로 이동합니다.
+3.  **사용자(Users)** 메뉴에서 사용자 계정을 선택합니다 (또는 새로 생성).
+4.  **보안 자격 증명(Security credentials)** 탭을 엽니다.
+5.  **액세스 키(Access keys)** 섹션에서 **액세스 키 만들기(Create access key)**를 클릭합니다.
+6.  **Access Key ID**와 **Secret Access Key**를 복사합니다.
+
+### 2. 도메인 이름 (Domain Name)
+*   사용할 도메인 주소입니다 (예: `example.com` 또는 `sub.example.com`).
+*   **Route53** 또는 다른 등록 대행업체에 등록된 도메인이어야 합니다.
+
+### 3. Hosted Zone ID
+1.  AWS 콘솔에서 **Route53**으로 이동합니다.
+2.  **호스팅 영역(Hosted zones)**을 클릭합니다.
+3.  사용할 도메인 이름을 클릭합니다.
+4.  대시보드에서 **호스팅 영역 세부 정보(Hosted zone details)**를 펼칩니다.
+5.  **호스팅 영역 ID(Hosted Zone ID)**를 복사합니다 (예: `Z0123456789ABCDEF`).
 
 ## 스크립트
 

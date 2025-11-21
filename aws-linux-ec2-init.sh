@@ -49,34 +49,39 @@ source /etc/profile.d/docker-compose.sh
 
 # 5. AWS Configuration
 echo "[4/6] Configuring AWS CLI..."
-read -p "Enter AWS Access Key ID: " AWS_ACCESS_KEY_ID < /dev/tty
-read -s -p "Enter AWS Secret Access Key: " AWS_SECRET_ACCESS_KEY < /dev/tty
-echo ""
-read -p "Enter AWS Region [ap-northeast-2]: " AWS_REGION < /dev/tty
-AWS_REGION=${AWS_REGION:-ap-northeast-2}
+if [ -f ~/.aws/credentials ]; then
+    echo "AWS CLI is already configured. Skipping configuration..."
+    # Load region from config if possible, or default
+    AWS_REGION=$(aws configure get region)
+    AWS_REGION=${AWS_REGION:-ap-northeast-2}
+else
+    read -p "Enter AWS Access Key ID: " AWS_ACCESS_KEY_ID < /dev/tty
+    read -s -p "Enter AWS Secret Access Key: " AWS_SECRET_ACCESS_KEY < /dev/tty
+    echo ""
+    read -p "Enter AWS Region [ap-northeast-2]: " AWS_REGION < /dev/tty
+    AWS_REGION=${AWS_REGION:-ap-northeast-2}
 
-# Configure AWS CLI for root
-aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
-aws configure set region "$AWS_REGION"
+    # Configure AWS CLI for root
+    aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    aws configure set region "$AWS_REGION"
 
-# Configure AWS CLI for ec2-user as well (optional but good for convenience)
-sudo -u ec2-user aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-sudo -u ec2-user aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
-sudo -u ec2-user aws configure set region "$AWS_REGION"
+    # Configure AWS CLI for ec2-user as well (optional but good for convenience)
+    sudo -u ec2-user aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+    sudo -u ec2-user aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+    sudo -u ec2-user aws configure set region "$AWS_REGION"
+fi
 
 # 6. Route53 Configuration
 echo "[5/6] Configuring Route53..."
 read -p "Enter Domain Name for Route53 (e.g., example.com): " DOMAIN_NAME < /dev/tty
-
-echo "Searching for Hosted Zone ID for $DOMAIN_NAME..."
-HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name == '${DOMAIN_NAME}.'].Id" --output text | cut -d/ -f3)
+read -p "Enter Hosted Zone ID for $DOMAIN_NAME: " HOSTED_ZONE_ID < /dev/tty
 
 if [ -z "$HOSTED_ZONE_ID" ]; then
-    echo "Error: Could not find Hosted Zone ID for domain '$DOMAIN_NAME'. Please ensure it exists in Route53."
+    echo "Error: Hosted Zone ID is required."
     echo "You may need to configure it manually later."
 else
-    echo "Found Hosted Zone ID: $HOSTED_ZONE_ID"
+    echo "Using Hosted Zone ID: $HOSTED_ZONE_ID"
 fi
 
 # 7. Generate Helper Scripts
