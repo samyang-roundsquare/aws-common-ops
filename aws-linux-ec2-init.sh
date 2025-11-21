@@ -49,10 +49,10 @@ source /etc/profile.d/docker-compose.sh
 
 # 5. AWS Configuration
 echo "[4/6] Configuring AWS CLI..."
-read -p "Enter AWS Access Key ID: " AWS_ACCESS_KEY_ID
-read -s -p "Enter AWS Secret Access Key: " AWS_SECRET_ACCESS_KEY
+read -p "Enter AWS Access Key ID: " AWS_ACCESS_KEY_ID < /dev/tty
+read -s -p "Enter AWS Secret Access Key: " AWS_SECRET_ACCESS_KEY < /dev/tty
 echo ""
-read -p "Enter AWS Region [ap-northeast-2]: " AWS_REGION
+read -p "Enter AWS Region [ap-northeast-2]: " AWS_REGION < /dev/tty
 AWS_REGION=${AWS_REGION:-ap-northeast-2}
 
 # Configure AWS CLI for root
@@ -67,7 +67,7 @@ sudo -u ec2-user aws configure set region "$AWS_REGION"
 
 # 6. Route53 Configuration
 echo "[5/6] Configuring Route53..."
-read -p "Enter Domain Name for Route53 (e.g., example.com): " DOMAIN_NAME
+read -p "Enter Domain Name for Route53 (e.g., example.com): " DOMAIN_NAME < /dev/tty
 
 echo "Searching for Hosted Zone ID for $DOMAIN_NAME..."
 HOSTED_ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name == '${DOMAIN_NAME}.'].Id" --output text | cut -d/ -f3)
