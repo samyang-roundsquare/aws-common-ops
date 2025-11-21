@@ -126,21 +126,21 @@ cat <<EOF > /bin/auto-update-route53.sh
 #!/bin/bash
 
 # Check params
-if [ "\\\$#" -ne 4 ]; then
-  echo "***ERROR: Missing parameters. Usage: \\\$0 <AccessKey> <SecretKey> <HostedZoneID> <Domain>"
+if [ "\$#" -ne 4 ]; then
+  echo "***ERROR: Missing parameters. Usage: \$0 <AccessKey> <SecretKey> <HostedZoneID> <Domain>"
   exit 1
 fi
 
-AWS_ACCESS_KEY_ID=\\\$1
-AWS_SECRET_ACCESS_KEY=\\\$2
-HOSTED_ZONE_ID=\\\$3
-DOMAIN=\\\$4
+AWS_ACCESS_KEY_ID=\$1
+AWS_SECRET_ACCESS_KEY=\$2
+HOSTED_ZONE_ID=\$3
+DOMAIN=\$4
 REGION=$AWS_REGION
 
 # Configure AWS for this session
-export AWS_ACCESS_KEY_ID=\\\$AWS_ACCESS_KEY_ID
-export AWS_SECRET_ACCESS_KEY=\\\$AWS_SECRET_ACCESS_KEY
-export AWS_DEFAULT_REGION=\\\$REGION
+export AWS_ACCESS_KEY_ID=\$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY
+export AWS_DEFAULT_REGION=\$REGION
 
 # Define JSON payload
 UPDATE_REQUEST='
@@ -165,40 +165,40 @@ UPDATE_REQUEST='
 
 # Get IP
 # Try multiple services for reliability
-CURRENT_IP=\\\$(curl -s http://checkip.amazonaws.com || curl -s http://ifconfig.me)
+CURRENT_IP=\$(curl -s http://checkip.amazonaws.com || curl -s http://ifconfig.me)
 
-if [ -z "\\\$CURRENT_IP" ]; then
+if [ -z "\$CURRENT_IP" ]; then
     echo "Error: Could not determine Public IP."
     exit 1
 fi
 
 # Store last IP to avoid unnecessary API calls
 LAST_IP_FILE="/tmp/ipupdate-lastip.txt"
-if [ -f "\\\$LAST_IP_FILE" ]; then
-    PREVIOUS_IP=\\\$(cat "\\\$LAST_IP_FILE")
+if [ -f "\$LAST_IP_FILE" ]; then
+    PREVIOUS_IP=\$(cat "\$LAST_IP_FILE")
 else
     PREVIOUS_IP=""
 fi
 
-echo "Current IP: \\\$CURRENT_IP"
-echo "Previous IP: \\\$PREVIOUS_IP"
+echo "Current IP: \$CURRENT_IP"
+echo "Previous IP: \$PREVIOUS_IP"
 
-if [ "\\\$CURRENT_IP" == "\\\$PREVIOUS_IP" ]; then
+if [ "\$CURRENT_IP" == "\$PREVIOUS_IP" ]; then
   echo "IP has not changed. No update needed."
 else
   echo "IP changed. Updating Route53..."
   
   # Prepare JSON
   JSON_FILE="/tmp/ipupdate-request.json"
-  echo "\\\$UPDATE_REQUEST" | sed "s/__domain__/\\\$DOMAIN/" | sed "s/__ip__/\\\$CURRENT_IP/" > "\\\$JSON_FILE"
+  echo "\$UPDATE_REQUEST" | sed "s/__domain__/\$DOMAIN/" | sed "s/__ip__/\$CURRENT_IP/" > "\$JSON_FILE"
   
   # Update Route53
-  aws route53 change-resource-record-sets \\\\
-        --hosted-zone-id "\\\$HOSTED_ZONE_ID" \\\\
-        --change-batch file://"\\\$JSON_FILE"
+  aws route53 change-resource-record-sets \\
+        --hosted-zone-id "\$HOSTED_ZONE_ID" \\
+        --change-batch file://"\$JSON_FILE"
         
-  if [ \\\$? -eq 0 ]; then
-      echo "\\\$CURRENT_IP" > "\\\$LAST_IP_FILE"
+  if [ \$? -eq 0 ]; then
+      echo "\$CURRENT_IP" > "\$LAST_IP_FILE"
       echo "Route53 updated successfully."
   else
       echo "Failed to update Route53."
@@ -223,7 +223,7 @@ AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
 HOSTED_ZONE_ID="$HOSTED_ZONE_ID"
 DOMAIN="$DOMAIN_NAME"
 
-/bin/auto-update-route53.sh "\\\$AWS_ACCESS_KEY_ID" "\\\$AWS_SECRET_ACCESS_KEY" "\\\$HOSTED_ZONE_ID" "\\\$DOMAIN"
+/bin/auto-update-route53.sh "\$AWS_ACCESS_KEY_ID" "\$AWS_SECRET_ACCESS_KEY" "\$HOSTED_ZONE_ID" "\$DOMAIN"
 EOF
 
 chmod +x /bin/aws-service-boot.sh
