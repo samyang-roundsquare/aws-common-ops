@@ -47,7 +47,7 @@ source /etc/profile.d/docker-compose.sh
 
 # 5. AWS Configuration (Run as root from here)
 echo "Switching to root for AWS configuration and script generation..."
-sudo su - <<'ROOTEOF'
+sudo -i bash <<'ROOTEOF'
 
 echo "[4/6] Configuring AWS CLI..."
 if [ -f ~/.aws/credentials ]; then
