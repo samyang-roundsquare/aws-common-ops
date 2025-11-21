@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# 1. Root User Check
-if [ "$(id -u)" -ne 0 ]; then
-    echo "This script must be run as root. Switching to root..."
-    sudo -i "$0" "$@"
-    exit
-fi
-
 echo "=========================================="
 echo " AWS EC2 Linux Initialization Script"
 echo "=========================================="
@@ -38,6 +31,11 @@ usermod -aG docker ec2-user
 service docker start
 systemctl enable docker
 
+# ec2-user 권한 추가
+gpasswd -a $USER docker
+newgrp docker
+service docker restart
+
 # Install Docker Compose Plugin
 mkdir -p /usr/local/lib/docker/cli-plugins/
 curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
@@ -47,8 +45,10 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 echo "alias docker-compose='docker compose --compatibility \"\$@\"'" >> /etc/profile.d/docker-compose.sh
 source /etc/profile.d/docker-compose.sh
 
+# 5. AWS Configuration (Run as root from here)
+echo "Switching to root for AWS configuration and script generation..."
+sudo su - <<'ROOTEOF'
 
-# 5. AWS Configuration
 echo "[4/6] Configuring AWS CLI..."
 if [ -f ~/.aws/credentials ]; then
     echo "AWS CLI is already configured. Skipping configuration..."
@@ -88,7 +88,7 @@ fi
 # 6. Route53 Configuration
 echo "[5/6] Configuring Route53..."
 read -p "Enter Domain Name for Route53 (e.g., example.com): " DOMAIN_NAME < /dev/tty
-read -p "Enter Hosted Zone ID for $DOMAIN_NAME: " HOSTED_ZONE_ID < /dev/tty
+read -p "Enter Hosted Zone ID for \$DOMAIN_NAME: " HOSTED_ZONE_ID < /dev/tty
 
 if [ -z "$HOSTED_ZONE_ID" ]; then
     echo "Error: Hosted Zone ID is required."
@@ -105,21 +105,21 @@ cat <<EOF > /bin/auto-update-route53.sh
 #!/bin/bash
 
 # Check params
-if [ "\$#" -ne 4 ]; then
-  echo "***ERROR: Missing parameters. Usage: \$0 <AccessKey> <SecretKey> <HostedZoneID> <Domain>"
+if [ "\\\$#" -ne 4 ]; then
+  echo "***ERROR: Missing parameters. Usage: \\\$0 <AccessKey> <SecretKey> <HostedZoneID> <Domain>"
   exit 1
 fi
 
-AWS_ACCESS_KEY_ID=\$1
-AWS_SECRET_ACCESS_KEY=\$2
-HOSTED_ZONE_ID=\$3
-DOMAIN=\$4
+AWS_ACCESS_KEY_ID=\\\$1
+AWS_SECRET_ACCESS_KEY=\\\$2
+HOSTED_ZONE_ID=\\\$3
+DOMAIN=\\\$4
 REGION=$AWS_REGION
 
 # Configure AWS for this session
-export AWS_ACCESS_KEY_ID=\$AWS_ACCESS_KEY_ID
-export AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY
-export AWS_DEFAULT_REGION=\$REGION
+export AWS_ACCESS_KEY_ID=\\\$AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY=\\\$AWS_SECRET_ACCESS_KEY
+export AWS_DEFAULT_REGION=\\\$REGION
 
 # Define JSON payload
 UPDATE_REQUEST='
@@ -144,40 +144,40 @@ UPDATE_REQUEST='
 
 # Get IP
 # Try multiple services for reliability
-CURRENT_IP=\$(curl -s http://checkip.amazonaws.com || curl -s http://ifconfig.me)
+CURRENT_IP=\\\$(curl -s http://checkip.amazonaws.com || curl -s http://ifconfig.me)
 
-if [ -z "\$CURRENT_IP" ]; then
+if [ -z "\\\$CURRENT_IP" ]; then
     echo "Error: Could not determine Public IP."
     exit 1
 fi
 
 # Store last IP to avoid unnecessary API calls
 LAST_IP_FILE="/tmp/ipupdate-lastip.txt"
-if [ -f "\$LAST_IP_FILE" ]; then
-    PREVIOUS_IP=\$(cat "\$LAST_IP_FILE")
+if [ -f "\\\$LAST_IP_FILE" ]; then
+    PREVIOUS_IP=\\\$(cat "\\\$LAST_IP_FILE")
 else
     PREVIOUS_IP=""
 fi
 
-echo "Current IP: \$CURRENT_IP"
-echo "Previous IP: \$PREVIOUS_IP"
+echo "Current IP: \\\$CURRENT_IP"
+echo "Previous IP: \\\$PREVIOUS_IP"
 
-if [ "\$CURRENT_IP" == "\$PREVIOUS_IP" ]; then
+if [ "\\\$CURRENT_IP" == "\\\$PREVIOUS_IP" ]; then
   echo "IP has not changed. No update needed."
 else
   echo "IP changed. Updating Route53..."
   
   # Prepare JSON
   JSON_FILE="/tmp/ipupdate-request.json"
-  echo "\$UPDATE_REQUEST" | sed "s/__domain__/\$DOMAIN/" | sed "s/__ip__/\$CURRENT_IP/" > "\$JSON_FILE"
+  echo "\\\$UPDATE_REQUEST" | sed "s/__domain__/\\\$DOMAIN/" | sed "s/__ip__/\\\$CURRENT_IP/" > "\\\$JSON_FILE"
   
   # Update Route53
-  aws route53 change-resource-record-sets \\
-        --hosted-zone-id "\$HOSTED_ZONE_ID" \\
-        --change-batch file://"\$JSON_FILE"
+  aws route53 change-resource-record-sets \\\\
+        --hosted-zone-id "\\\$HOSTED_ZONE_ID" \\\\
+        --change-batch file://"\\\$JSON_FILE"
         
-  if [ \$? -eq 0 ]; then
-      echo "\$CURRENT_IP" > "\$LAST_IP_FILE"
+  if [ \\\$? -eq 0 ]; then
+      echo "\\\$CURRENT_IP" > "\\\$LAST_IP_FILE"
       echo "Route53 updated successfully."
   else
       echo "Failed to update Route53."
@@ -189,9 +189,9 @@ chmod +x /bin/auto-update-route53.sh
 
 # aws-service-boot.sh
 echo "Generating aws-service-boot.sh with credentials..."
-echo "  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:0:10}..."
-echo "  HOSTED_ZONE_ID: $HOSTED_ZONE_ID"
-echo "  DOMAIN: $DOMAIN_NAME"
+echo "  AWS_ACCESS_KEY_ID: \${AWS_ACCESS_KEY_ID:0:10}..."
+echo "  HOSTED_ZONE_ID: \$HOSTED_ZONE_ID"
+echo "  DOMAIN: \$DOMAIN_NAME"
 
 cat <<EOF > /bin/aws-service-boot.sh
 #!/bin/bash
@@ -202,7 +202,7 @@ AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
 HOSTED_ZONE_ID="$HOSTED_ZONE_ID"
 DOMAIN="$DOMAIN_NAME"
 
-/bin/auto-update-route53.sh "\$AWS_ACCESS_KEY_ID" "\$AWS_SECRET_ACCESS_KEY" "\$HOSTED_ZONE_ID" "\$DOMAIN"
+/bin/auto-update-route53.sh "\\\$AWS_ACCESS_KEY_ID" "\\\$AWS_SECRET_ACCESS_KEY" "\\\$HOSTED_ZONE_ID" "\\\$DOMAIN"
 EOF
 
 chmod +x /bin/aws-service-boot.sh
@@ -227,3 +227,6 @@ echo "  /bin/aws-service-boot.sh"
 echo ""
 echo "The script will automatically run on system boot."
 echo "=========================================="
+
+exit
+ROOTEOF

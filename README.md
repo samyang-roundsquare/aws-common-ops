@@ -50,9 +50,8 @@ This is the main unified initialization script. It performs the following:
 
 **Option 1: Quick Install (via curl)**
 
-Switch to root account and run the following command:
+Run the following command:
 ```bash
-sudo su -
 curl -fsSL https://raw.githubusercontent.com/samyang-roundsquare/aws-common-ops/refs/heads/main/aws-linux-ec2-init.sh | sh
 ```
 
@@ -165,9 +164,8 @@ To automatically update Route53 on reboot, you can add the following to your EC2
 
 **옵션 1: 빠른 설치 (curl 사용)**
 
-root 계정으로 전환 후 다음 명령어를 실행합니다:
+다음 명령어를 실행합니다:
 ```bash
-sudo su -
 curl -fsSL https://raw.githubusercontent.com/samyang-roundsquare/aws-common-ops/refs/heads/main/aws-linux-ec2-init.sh | sh
 ```
 
