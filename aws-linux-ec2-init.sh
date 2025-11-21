@@ -39,18 +39,24 @@ systemctl start crond
 echo "[3/6] Installing Docker & Docker Compose..."
 amazon-linux-extras enable docker
 yum install -y docker
+
+# Add ec2-user to docker group
 usermod -aG docker ec2-user
+
+# Start and enable docker
 service docker start
 systemctl enable docker
 
-# ec2-user 권한 추가
-gpasswd -a ec2-user docker
-newgrp docker
+# Ensure docker socket has correct permissions
+chmod 666 /var/run/docker.sock
+
+# Restart docker to apply changes
 service docker restart
 
-# Install Docker Compose Plugin
+# Install Docker Compose Plugin : compose build requires buildx 0.17 or late -> 2.39.1
 mkdir -p /usr/local/lib/docker/cli-plugins/
-curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
+# curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
+curl -SL "https://github.com/docker/compose/releases/download/v2.39.1/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 docker compose version
 
@@ -101,8 +107,9 @@ fi
 
 # 6. Route53 Configuration
 echo "[5/6] Configuring Route53..."
-read -p "Enter Domain Name for Route53 (e.g., example.com): " DOMAIN_NAME < /dev/tty
-read -p "Enter Hosted Zone ID for \$DOMAIN_NAME: " HOSTED_ZONE_ID < /dev/tty
+read -p "Enter Domain Name for Route53 (e.g., roundsquare.io): " DOMAIN_NAME < /dev/tty
+echo "Enter Hosted Zone ID for $DOMAIN_NAME:"
+read HOSTED_ZONE_ID < /dev/tty
 
 if [ -z "$HOSTED_ZONE_ID" ]; then
     echo "Error: Hosted Zone ID is required."
