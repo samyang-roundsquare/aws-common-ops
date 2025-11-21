@@ -43,15 +43,16 @@ This is the main unified initialization script. It performs the following:
     *   Asks for the Domain Name (e.g., `example.com`).
     *   Automatically finds the Hosted Zone ID from Route53.
 4.  **Helper Script Generation**:
-    *   Generates `/usr/local/bin/auto-update-route53.sh`: Core logic for updating DNS.
-    *   Generates `/usr/local/bin/aws-service-boot.sh`: Wrapper script with saved credentials.
+    *   Generates `/bin/auto-update-route53.sh`: Core logic for updating DNS.
+    *   Generates `/bin/aws-service-boot.sh`: Wrapper script with saved credentials.
 
 #### Usage
 
 **Option 1: Quick Install (via curl)**
 
-Run the following command:
+Switch to root account and run the following command:
 ```bash
+sudo su -
 curl -fsSL https://raw.githubusercontent.com/samyang-roundsquare/aws-common-ops/refs/heads/main/aws-linux-ec2-init.sh | sh
 ```
 
@@ -74,7 +75,7 @@ If you cannot access the public repository:
 
 ### Generated Scripts
 
-After running the init script, the following scripts will be available in `/usr/local/bin/`:
+After running the init script, the following scripts will be available in `/bin/`:
 
 #### `aws-service-boot.sh`
 
@@ -97,7 +98,7 @@ This script handles the logic of checking the current Public IP and updating the
 To automatically update Route53 on reboot, you can add the following to your EC2 User Data or Crontab:
 
 ```bash
-/usr/local/bin/aws-service-boot.sh
+/bin/aws-service-boot.sh
 ```
 
 ### How to Configure User Data (AWS Console)
@@ -107,7 +108,7 @@ To automatically update Route53 on reboot, you can add the following to your EC2
 3.  Scroll down to the **User data** field.
 4.  Enter the command:
     ```bash
-    /usr/local/bin/aws-service-boot.sh
+    /bin/aws-service-boot.sh
     ```
 
 ---
@@ -157,15 +158,16 @@ To automatically update Route53 on reboot, you can add the following to your EC2
     *   도메인 이름(예: `example.com`)을 입력받습니다.
     *   Route53에서 해당 도메인의 Hosted Zone ID를 자동으로 찾습니다.
 4.  **보조 스크립트 생성**:
-    *   `/usr/local/bin/auto-update-route53.sh`: DNS 업데이트를 위한 핵심 로직을 생성합니다.
-    *   `/usr/local/bin/aws-service-boot.sh`: 저장된 자격 증명을 사용하는 래퍼 스크립트를 생성합니다.
+    *   `/bin/auto-update-route53.sh`: DNS 업데이트를 위한 핵심 로직을 생성합니다.
+    *   `/bin/aws-service-boot.sh`: 저장된 자격 증명을 사용하는 래퍼 스크립트를 생성합니다.
 
 #### 사용법
 
 **옵션 1: 빠른 설치 (curl 사용)**
 
-다음 명령어를 실행합니다:
+root 계정으로 전환 후 다음 명령어를 실행합니다:
 ```bash
+sudo su -
 curl -fsSL https://raw.githubusercontent.com/samyang-roundsquare/aws-common-ops/refs/heads/main/aws-linux-ec2-init.sh | sh
 ```
 
@@ -188,7 +190,7 @@ Public 저장소에 접근할 수 없는 경우:
 
 ### 생성되는 스크립트
 
-초기화 스크립트를 실행하면 다음 스크립트들이 `/usr/local/bin/` 경로에 생성됩니다:
+초기화 스크립트를 실행하면 다음 스크립트들이 `/bin/` 경로에 생성됩니다:
 
 #### `aws-service-boot.sh`
 
@@ -211,7 +213,7 @@ Public 저장소에 접근할 수 없는 경우:
 재부팅 시 자동으로 Route53을 업데이트하려면 EC2 User Data 또는 Crontab에 다음을 추가하세요:
 
 ```bash
-/usr/local/bin/aws-service-boot.sh
+/bin/aws-service-boot.sh
 ```
 
 ### User Data 설정 방법 (AWS Console)
@@ -221,5 +223,5 @@ Public 저장소에 접근할 수 없는 경우:
 3.  **사용자 데이터(User data)** 필드를 찾습니다.
 4.  다음 명령어를 입력합니다:
     ```bash
-    /usr/local/bin/aws-service-boot.sh
+    /bin/aws-service-boot.sh
     ```

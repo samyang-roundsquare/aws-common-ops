@@ -88,7 +88,7 @@ fi
 echo "[6/6] Generating Helper Scripts..."
 
 # auto-update-route53.sh
-cat <<EOF > /usr/local/bin/auto-update-route53.sh
+cat <<EOF > /bin/auto-update-route53.sh
 #!/bin/bash
 
 # Check params
@@ -172,10 +172,10 @@ else
 fi
 EOF
 
-chmod +x /usr/local/bin/auto-update-route53.sh
+chmod +x /bin/auto-update-route53.sh
 
 # aws-service-boot.sh
-cat <<EOF > /usr/local/bin/aws-service-boot.sh
+cat <<EOF > /bin/aws-service-boot.sh
 #!/bin/bash
 # Wrapper script to call auto-update-route53.sh with configured credentials
 
@@ -184,10 +184,10 @@ AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
 HOSTED_ZONE_ID="$HOSTED_ZONE_ID"
 DOMAIN="$DOMAIN_NAME"
 
-/usr/local/bin/auto-update-route53.sh "\$AWS_ACCESS_KEY_ID" "\$AWS_SECRET_ACCESS_KEY" "\$HOSTED_ZONE_ID" "\$DOMAIN"
+/bin/auto-update-route53.sh "\$AWS_ACCESS_KEY_ID" "\$AWS_SECRET_ACCESS_KEY" "\$HOSTED_ZONE_ID" "\$DOMAIN"
 EOF
 
-chmod +x /usr/local/bin/aws-service-boot.sh
+chmod +x /bin/aws-service-boot.sh
 
 echo "=========================================="
 echo " Initialization Complete!"
@@ -195,12 +195,12 @@ echo "=========================================="
 echo "1. Docker and Docker Compose are installed."
 echo "2. Timezone is set to Asia/Seoul."
 echo "3. AWS CLI is configured."
-echo "4. Helper scripts created in /usr/local/bin/:"
+echo "4. Helper scripts created in /bin/:"
 echo "   - auto-update-route53.sh"
 echo "   - aws-service-boot.sh"
 echo ""
 echo "To update Route53 manually, run:"
-echo "  /usr/local/bin/aws-service-boot.sh"
+echo "  /bin/aws-service-boot.sh"
 echo ""
 echo "You can add this to User Data or crontab for auto-updates."
 echo "=========================================="
