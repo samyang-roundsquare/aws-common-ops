@@ -77,6 +77,16 @@ To automatically update Route53 on reboot, you can add the following to your EC2
 /usr/local/bin/aws-service-boot.sh
 ```
 
+### How to Configure User Data (AWS Console)
+
+1.  Go to **EC2 Console** > **Launch an instance**.
+2.  Scroll down and expand **Advanced details**.
+3.  Scroll down to the **User data** field.
+4.  Enter the command:
+    ```bash
+    /usr/local/bin/aws-service-boot.sh
+    ```
+
 ---
 
 # AWS EC2 초기화 및 Route53 자동화 (Korean)
@@ -157,3 +167,13 @@ Public 저장소에 접근할 수 없는 경우:
 ```bash
 /usr/local/bin/aws-service-boot.sh
 ```
+
+### User Data 설정 방법 (AWS Console)
+
+1.  **EC2 콘솔** > **인스턴스 시작**으로 이동합니다.
+2.  아래로 스크롤하여 **고급 세부 정보(Advanced details)**를 펼칩니다.
+3.  **사용자 데이터(User data)** 필드를 찾습니다.
+4.  다음 명령어를 입력합니다:
+    ```bash
+    /usr/local/bin/aws-service-boot.sh
+    ```
