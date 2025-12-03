@@ -1,4 +1,4 @@
-version: "3.8"
+
 
 services:
   # Jenkins CI/CD 서버
@@ -52,13 +52,29 @@ services:
     volumes:
       - ./nginx/certs:/etc/letsencrypt
       - ./nginx/html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - cicd-network
     restart: unless-stopped
     depends_on:
       - nginx
-    # 이메일과 도메인을 실제 값으로 변경하세요 (스크립트가 자동으로 처리함)
-    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /usr/share/nginx/html --quiet --deploy-hook 'nginx -s reload'; sleep 12h & wait $${!}; done"
+    # Entrypoint:
+    # 1. Installs docker-cli (for deploy-hook)
+    # 2. If arguments are provided (e.g., 'certonly ...'), executes them (Passthrough)
+    # 3. If no arguments, runs the renewal loop
+    entrypoint: >
+      /bin/sh -c '
+      apk add --no-cache docker-cli;
+      if [ "$#" -gt 0 ]; then
+        exec certbot "$@"
+      else
+        trap exit TERM;
+        while :; do
+          certbot renew --webroot -w /usr/share/nginx/html --quiet --deploy-hook "docker exec cicd-nginx nginx -s reload"
+          sleep 12h & wait $${!}
+        done
+      fi
+      '
 
 networks:
   cicd-network:
