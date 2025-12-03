@@ -1,4 +1,4 @@
-
+version: "3.8"
 
 services:
   # Jenkins CI/CD 서버
@@ -58,23 +58,21 @@ services:
     restart: unless-stopped
     depends_on:
       - nginx
-    # Entrypoint:
-    # 1. Installs docker-cli (for deploy-hook)
-    # 2. If arguments are provided (e.g., 'certonly ...'), executes them (Passthrough)
-    # 3. If no arguments, runs the renewal loop
-    entrypoint: >
-      /bin/sh -c '
-      apk add --no-cache docker-cli;
-      if [ "$#" -gt 0 ]; then
-        exec certbot "$@"
-      else
-        trap exit TERM;
-        while :; do
-          certbot renew --webroot -w /usr/share/nginx/html --quiet --deploy-hook "docker exec cicd-nginx nginx -s reload"
-          sleep 12h & wait $${!}
-        done
-      fi
-      '
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache docker-cli
+        if [ "$#" -gt 0 ]; then
+          exec certbot "$@"
+        else
+          trap exit TERM;
+          while :; do
+            certbot renew --webroot -w /usr/share/nginx/html --quiet --deploy-hook "docker exec cicd-nginx nginx -s reload"
+            sleep 12h & wait $${!}
+          done
+        fi
+      - --
 
 networks:
   cicd-network:
