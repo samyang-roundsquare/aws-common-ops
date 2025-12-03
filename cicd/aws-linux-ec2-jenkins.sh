@@ -197,7 +197,7 @@ if [ -n "$DOMAIN_NAME" ] && [ "$DOMAIN_NAME" != "your-domain.com" ] && [ -n "$EM
     echo "Requesting SSL certificate for $DOMAIN_NAME..."
     
     # Certbot 실행 (일회성)
-    docker compose run --rm certbot certonly --webroot --webroot-path=/usr/share/nginx/html --email "$EMAIL" --agree-tos --no-eff-email -d "$DOMAIN_NAME"
+    docker compose run --rm -T certbot certonly --webroot --webroot-path=/usr/share/nginx/html --email "$EMAIL" --agree-tos --no-eff-email -d "$DOMAIN_NAME"
     
     if [ $? -eq 0 ]; then
         echo "SSL Certificate obtained successfully."
