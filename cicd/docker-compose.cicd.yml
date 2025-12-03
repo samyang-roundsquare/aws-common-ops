@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  # Jenkins CI/CD 서버
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: cicd-jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    environment:
+      - TZ=Asia/Seoul
+      - JAVA_OPTS=-Duser.timezone=Asia/Seoul
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      # PEM 파일 마운트 (요구사항에 따름)
+      - ./${PEM_FILE}:/var/jenkins_home/.ssh/id_rsa:ro
+      # 모든 PEM 파일 마운트
+      - ./keys:/var/jenkins_home/.ssh/keys:ro
+    networks:
+      - cicd-network
+    restart: unless-stopped
+    user: root # 도커 소켓 접근을 위해 필요
+
+  # Nginx 리버스 프록시
+  nginx:
+    image: nginx:latest
+    container_name: cicd-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - TZ=Asia/Seoul
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/html:/usr/share/nginx/html
+    networks:
+      - cicd-network
+    restart: unless-stopped
+    depends_on:
+      - jenkins
+    command: nginx -g 'daemon off;'
+
+  # Certbot SSL 인증서 관리
+  certbot:
+    image: certbot/certbot
+    container_name: cicd-certbot
+    environment:
+      - TZ=Asia/Seoul
+    volumes:
+      - ./nginx/certs:/etc/letsencrypt
+      - ./nginx/html:/usr/share/nginx/html
+    networks:
+      - cicd-network
+    restart: unless-stopped
+    depends_on:
+      - nginx
+    # 이메일과 도메인을 실제 값으로 변경하세요 (스크립트가 자동으로 처리함)
+    entrypoint: /bin/sh -c "if [ ! -d /etc/letsencrypt/live/your-domain.com ]; then certbot certonly --webroot --webroot-path=/usr/share/nginx/html --email your-email@example.com --agree-tos --no-eff-email -d your-domain.com; fi; trap exit TERM; while :; do certbot renew --webroot -w /usr/share/nginx/html --quiet --deploy-hook 'nginx -s reload'; sleep 12h & wait $${!}; done"
+
+networks:
+  cicd-network:
+    name: cicd-network
+    driver: bridge
+
+volumes:
+  jenkins_home:
+    driver: local
