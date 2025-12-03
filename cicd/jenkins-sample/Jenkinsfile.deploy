@@ -1,0 +1,179 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'TARGET_SERVER',
+            choices: ['worker', 'api', 'web'],
+            description: '배포할 대상 서버 선택'
+        )
+        string(
+            name: 'BRANCH',
+            defaultValue: 'main',
+            description: '배포할 Git 브랜치'
+        )
+    }
+
+    environment {
+        // SSH 키 경로 매핑 (서버별 PEM 파일)
+        WORKER_KEY = '/var/jenkins_home/.ssh/keys/worker-key.pem'
+        API_KEY = '/var/jenkins_home/.ssh/keys/api-key.pem'
+        WEB_KEY = '/var/jenkins_home/.ssh/keys/web-key.pem'
+
+        // 서버 정보 매핑
+        WORKER_HOST = 'ec2-user@10.0.1.10'
+        API_HOST = 'ec2-user@10.0.2.20'
+        WEB_HOST = 'ec2-user@10.0.3.30'
+
+        // 배포 스크립트 경로
+        DEPLOY_SCRIPT = "deploy-${TARGET_SERVER}.sh"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    echo "Checking out branch: ${params.BRANCH}"
+                    checkout scm: [
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.BRANCH}"]],
+                        userRemoteConfigs: [[
+                            url: 'git@github.com:your-org/your-repo.git',
+                            credentialsId: 'github-ssh-key'
+                        ]]
+                    ]
+                }
+            }
+        }
+
+        stage('Prepare Deployment') {
+            steps {
+                script {
+                    echo "Preparing deployment for ${params.TARGET_SERVER}"
+
+                    // 배포 대상 서버 정보 설정
+                    def serverInfo = getServerInfo(params.TARGET_SERVER)
+                    env.SSH_KEY = serverInfo.key
+                    env.SSH_HOST = serverInfo.host
+
+                    echo "Target: ${env.SSH_HOST}"
+                    echo "Using SSH Key: ${env.SSH_KEY}"
+                }
+            }
+        }
+
+        stage('Deploy to Server') {
+            steps {
+                script {
+                    echo "Deploying to ${params.TARGET_SERVER} server..."
+
+                    // SSH 연결 확인
+                    sh """
+                        chmod 400 ${env.SSH_KEY}
+                        ssh -o StrictHostKeyChecking=no -i ${env.SSH_KEY} ${env.SSH_HOST} 'echo "Connection successful"'
+                    """
+
+                    // Git 저장소 업데이트 또는 클론
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i ${env.SSH_KEY} ${env.SSH_HOST} << 'ENDSSH'
+set -e
+
+PROJECT_DIR="/home/ec2-user/app"
+REPO_URL="git@github.com:your-org/your-repo.git"
+
+# 프로젝트 디렉토리 확인 및 Git 작업
+if [ -d "\$PROJECT_DIR/.git" ]; then
+    echo "Updating existing repository..."
+    cd \$PROJECT_DIR
+    git fetch origin
+    git checkout ${params.BRANCH}
+    git pull origin ${params.BRANCH}
+else
+    echo "Cloning repository..."
+    mkdir -p \$PROJECT_DIR
+    git clone -b ${params.BRANCH} \$REPO_URL \$PROJECT_DIR
+    cd \$PROJECT_DIR
+fi
+
+echo "Current commit: \$(git rev-parse HEAD)"
+echo "Repository updated successfully"
+ENDSSH
+                    """
+
+                    // 배포 스크립트 실행
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i ${env.SSH_KEY} ${env.SSH_HOST} << 'ENDSSH'
+set -e
+
+PROJECT_DIR="/home/ec2-user/app"
+cd \$PROJECT_DIR
+
+# 배포 스크립트 실행 권한 확인
+if [ -f "${env.DEPLOY_SCRIPT}" ]; then
+    chmod +x ${env.DEPLOY_SCRIPT}
+    echo "Executing deployment script: ${env.DEPLOY_SCRIPT}"
+    ./${env.DEPLOY_SCRIPT}
+else
+    echo "Warning: Deployment script ${env.DEPLOY_SCRIPT} not found"
+    echo "Available files:"
+    ls -la *.sh || echo "No shell scripts found"
+    exit 1
+fi
+
+echo "Deployment completed successfully"
+ENDSSH
+                    """
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    echo "Verifying deployment on ${params.TARGET_SERVER}..."
+
+                    // 배포 확인 (예: 서비스 상태 체크)
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i ${env.SSH_KEY} ${env.SSH_HOST} << 'ENDSSH'
+# Docker Compose 상태 확인 예제
+cd /home/ec2-user/app
+
+if command -v docker &> /dev/null; then
+    echo "Checking Docker containers..."
+    docker compose ps || docker ps
+fi
+
+# 프로세스 확인 예제
+echo "Checking running processes..."
+ps aux | grep -E 'node|python|java' | grep -v grep || echo "No application processes found"
+
+echo "Verification completed"
+ENDSSH
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment to ${params.TARGET_SERVER} completed successfully!"
+        }
+        failure {
+            echo "Deployment to ${params.TARGET_SERVER} failed!"
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
+
+// 서버 정보 반환 함수
+def getServerInfo(serverName) {
+    def serverMap = [
+        'worker': [key: env.WORKER_KEY, host: env.WORKER_HOST],
+        'api': [key: env.API_KEY, host: env.API_HOST],
+        'web': [key: env.WEB_KEY, host: env.WEB_HOST]
+    ]
+    return serverMap[serverName]
+}

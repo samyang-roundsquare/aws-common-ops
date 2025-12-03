@@ -131,22 +131,22 @@ echo "Downloading README.md..."
 curl -sSL "$BASE_URL/README.md" -o "$TARGET_DIR/README.md"
 
 echo "Downloading nginx configuration files..."
-curl -sSL "$BASE_URL/nginx/conf.d/default.http.conf" -o "$TARGET_DIR/nginx/conf.d/default.http.conf"
-curl -sSL "$BASE_URL/nginx/conf.d/default.ssl.conf" -o "$TARGET_DIR/nginx/conf.d/default.ssl.conf"
+curl -sSL "$BASE_URL/nginx/conf.d/default.conf.http" -o "$TARGET_DIR/nginx/conf.d/default.conf.http"
+curl -sSL "$BASE_URL/nginx/conf.d/default.conf.ssl" -o "$TARGET_DIR/nginx/conf.d/default.conf.ssl"
 
 cd "$TARGET_DIR"
 
 # 도메인 설정 적용
 if [ -n "$DOMAIN_NAME" ] && [ "$DOMAIN_NAME" != "your-domain.com" ]; then
     echo "Configuring Nginx and Docker Compose with domain: $DOMAIN_NAME"
-    sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/nginx/conf.d/default.http.conf"
-    sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/nginx/conf.d/default.ssl.conf"
+    sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/nginx/conf.d/default.conf.http"
+    sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/nginx/conf.d/default.conf.ssl"
     sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/docker-compose.yml"
 fi
 
 # HTTP 모드 설정 적용 (초기 설정)
 echo "Applying HTTP-only configuration..."
-cp "$TARGET_DIR/nginx/conf.d/default.http.conf" "$TARGET_DIR/nginx/conf.d/default.conf"
+mv "$TARGET_DIR/nginx/conf.d/default.conf.http" "$TARGET_DIR/nginx/conf.d/default.conf"
 
 # 이메일 설정 (Certbot용)
 # SSH 키 생성 시 입력한 이메일이 있다면 사용, 없으면 물어봄
@@ -210,7 +210,7 @@ if [ -n "$DOMAIN_NAME" ] && [ "$DOMAIN_NAME" != "your-domain.com" ] && [ -n "$EM
 
         # SSL 설정으로 전환
         echo "Switching to SSL configuration..."
-        cp "$TARGET_DIR/nginx/conf.d/default.ssl.conf" "$TARGET_DIR/nginx/conf.d/default.conf"
+        mv "$TARGET_DIR/nginx/conf.d/default.conf.ssl" "$TARGET_DIR/nginx/conf.d/default.conf"
 
         echo "Reloading Nginx..."
         docker compose exec nginx nginx -s reload
