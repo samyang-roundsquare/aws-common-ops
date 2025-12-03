@@ -58,7 +58,7 @@ services:
     depends_on:
       - nginx
     # 이메일과 도메인을 실제 값으로 변경하세요 (스크립트가 자동으로 처리함)
-    entrypoint: /bin/sh -c "if [ ! -d /etc/letsencrypt/live/your-domain.com ]; then certbot certonly --webroot --webroot-path=/usr/share/nginx/html --email your-email@example.com --agree-tos --no-eff-email -d your-domain.com; fi; trap exit TERM; while :; do certbot renew --webroot -w /usr/share/nginx/html --quiet --deploy-hook 'nginx -s reload'; sleep 12h & wait $${!}; done"
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /usr/share/nginx/html --quiet --deploy-hook 'nginx -s reload'; sleep 12h & wait $${!}; done"
 
 networks:
   cicd-network:
