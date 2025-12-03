@@ -130,17 +130,23 @@ curl -sSL "$BASE_URL/docker-compose.cicd.yml" -o "$TARGET_DIR/docker-compose.yml
 echo "Downloading README.md..."
 curl -sSL "$BASE_URL/README.md" -o "$TARGET_DIR/README.md"
 
-echo "Downloading nginx/conf.d/default.conf..."
-curl -sSL "$BASE_URL/nginx/conf.d/default.conf" -o "$TARGET_DIR/nginx/conf.d/default.conf"
+echo "Downloading nginx configuration files..."
+curl -sSL "$BASE_URL/nginx/conf.d/default.http.conf" -o "$TARGET_DIR/nginx/conf.d/default.http.conf"
+curl -sSL "$BASE_URL/nginx/conf.d/default.ssl.conf" -o "$TARGET_DIR/nginx/conf.d/default.ssl.conf"
 
 cd "$TARGET_DIR"
 
 # 도메인 설정 적용
 if [ -n "$DOMAIN_NAME" ] && [ "$DOMAIN_NAME" != "your-domain.com" ]; then
     echo "Configuring Nginx and Docker Compose with domain: $DOMAIN_NAME"
-    sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/nginx/conf.d/default.conf"
+    sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/nginx/conf.d/default.http.conf"
+    sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/nginx/conf.d/default.ssl.conf"
     sed -i "s/your-domain.com/$DOMAIN_NAME/g" "$TARGET_DIR/docker-compose.yml"
 fi
+
+# HTTP 모드 설정 적용 (초기 설정)
+echo "Applying HTTP-only configuration..."
+cp "$TARGET_DIR/nginx/conf.d/default.http.conf" "$TARGET_DIR/nginx/conf.d/default.conf"
 
 # 이메일 설정 (Certbot용)
 # SSH 키 생성 시 입력한 이메일이 있다면 사용, 없으면 물어봄
@@ -201,38 +207,11 @@ if [ -n "$DOMAIN_NAME" ] && [ "$DOMAIN_NAME" != "your-domain.com" ] && [ -n "$EM
     
     if [ $? -eq 0 ]; then
         echo "SSL Certificate obtained successfully."
-        
-        # Nginx 설정에서 SSL 블록 주석 해제
-        echo "Enabling SSL in Nginx configuration..."
-        CONF_FILE="$TARGET_DIR/nginx/conf.d/default.conf"
-        
-        # 1. 주석 처리된 server 블록 해제 (단순한 sed로 # 제거는 위험할 수 있으므로 패턴 매칭 사용)
-        # 여기서는 전체 파일 내용을 덮어쓰거나, 특정 마커를 사용하는 것이 안전하지만,
-        # 기존 파일 구조를 안다면 sed로 처리 가능.
-        # '#'으로 시작하는 줄 중 'server {' 부터 '}' 까지의 주석을 제거하는 것은 복잡함.
-        # 대신, 파일 다운로드 시점에 이미 주석 처리된 버전을 받았으므로,
-        # sed를 사용하여 주석(# )을 제거. 단, 설명 주석은 유지해야 함.
-        # 가장 확실한 방법: 미리 준비된 SSL 설정 블록을 추가하거나, sed로 특정 라인들의 주석 해제.
-        
-        # 전략: 'listen 443 ssl;'이 포함된 줄의 주석을 해제하고, 그 주변 블록을 활성화.
-        # 하지만 더 간단하게, sed로 모든 '# '를 제거하면 설명글도 망가짐.
-        # 따라서, '# server {' -> 'server {' 로 변경하고,
-        # '#     listen 443' -> '    listen 443' 등으로 변경.
-        
-        sed -i 's/# server {/server {/' "$CONF_FILE"
-        sed -i 's/#     listen 443/    listen 443/' "$CONF_FILE"
-        sed -i 's/#     server_name/    server_name/' "$CONF_FILE"
-        sed -i 's/#     ssl_protocols/    ssl_protocols/' "$CONF_FILE"
-        sed -i 's/#     ssl_prefer/    ssl_prefer/' "$CONF_FILE"
-        sed -i 's/#     location/    location/' "$CONF_FILE"
-        sed -i 's/#         proxy/        proxy/' "$CONF_FILE"
-        sed -i 's/#     }/    }/' "$CONF_FILE"
-        sed -i 's/# }/}/' "$CONF_FILE"
-        
-        # 인증서 경로 주석 해제
-        sed -i 's/#     ssl_certificate /    ssl_certificate /' "$CONF_FILE"
-        sed -i 's/#     ssl_certificate_key /    ssl_certificate_key /' "$CONF_FILE"
-        
+
+        # SSL 설정으로 전환
+        echo "Switching to SSL configuration..."
+        cp "$TARGET_DIR/nginx/conf.d/default.ssl.conf" "$TARGET_DIR/nginx/conf.d/default.conf"
+
         echo "Reloading Nginx..."
         docker compose exec nginx nginx -s reload
     else
@@ -244,6 +223,10 @@ fi
 
 echo "Starting all services..."
 docker compose up -d
+
+echo "Cleaning up Docker system..."
+docker system prune -f
+docker volume prune -f
 
 echo "=========================================="
 echo " Jenkins Setup Complete!"

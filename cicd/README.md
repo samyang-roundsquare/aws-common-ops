@@ -29,11 +29,16 @@
 cicd/
 ├── docker-compose.yml       # 메인 Docker Compose 파일 (Repo: docker-compose.cicd.yml)
 ├── README.md                # 본 가이드
-├── key.pem                  # SSH 개인 키 (사용자가 직접 제공해야 함)
+├── .env                     # PEM 파일 설정 (자동 생성)
+├── keys/
+│   └── key.pem             # SSH 개인 키 (자동 복사됨)
 └── nginx/
     ├── conf.d/
-    │   └── default.conf     # Nginx 설정
-    └── certs/               # SSL 인증서 (자동 생성됨)
+    │   ├── default.conf         # 현재 사용 중인 Nginx 설정
+    │   ├── default.http.conf    # HTTP 전용 설정 (인증서 발급용)
+    │   └── default.ssl.conf     # HTTPS 설정 (인증서 발급 후)
+    ├── certs/                   # SSL 인증서 (자동 생성됨)
+    └── html/                    # Let's Encrypt 인증 경로
 ```
 
 ## 설정 단계
@@ -72,25 +77,38 @@ cicd/
         > **참고**: `id_rsa`는 Jenkins가 Git 저장소(GitHub 등)에 접근할 때 사용하는 기본 SSH 키입니다. 반면, `/var/jenkins_home/.ssh/keys/`에 마운트된 다른 PEM 파일들은 배포 대상 서버(Worker, API 등)에 SSH로 접속할 때 명시적으로 사용됩니다 (예: `ssh -i ...`).
 
 2.  **도메인 설정**:
-    스크립트 실행 시 도메인 이름을 입력받아 자동으로 설정합니다 (`nginx/conf.d/default.conf` 및 `docker-compose.yml`).
+    스크립트 실행 시 도메인 이름을 입력받아 자동으로 설정합니다.
+    - `nginx/conf.d/default.http.conf` 및 `default.ssl.conf` 파일에 도메인이 적용됩니다.
     - 만약 수동으로 변경해야 한다면 해당 파일들을 열어 `your-domain.com`을 실제 도메인 이름으로 변경하세요.
 
-3.  **서비스 시작**:
-    다음 명령어를 실행하여 서비스를 시작하세요:
+3.  **서비스 시작 및 SSL 인증서 설정**:
+    스크립트가 다음 순서로 자동 실행됩니다:
+
+    **a. HTTP 모드로 시작**:
+    - `default.http.conf` → `default.conf`로 복사
+    - Jenkins와 Nginx를 HTTP 모드로 시작
+
+    **b. SSL 인증서 발급**:
+    - 입력한 이메일과 도메인으로 Let's Encrypt 인증서 발급
+    - 인증서는 `nginx/certs/` 디렉토리에 저장됨
+
+    **c. HTTPS 모드로 전환**:
+    - 인증서 발급 성공 시 `default.ssl.conf` → `default.conf`로 복사
+    - Nginx를 재로드하여 HTTPS 활성화
+
+    *참고: 초기 인증서 발급이 실패한 경우 다음 명령어로 수동 재시도:*
     ```bash
-    docker compose up -d
+    cd ~/cicd
+    docker compose run --rm -T certbot certonly --webroot \
+      --webroot-path=/usr/share/nginx/html \
+      --email your-email@example.com \
+      --agree-tos --no-eff-email \
+      -d your-domain.com
     ```
 
-4.  **SSL 인증서 설정**:
-    스크립트 실행 시 이메일을 입력받아 `docker-compose.yml`에 설정합니다.
-    `certbot` 서비스가 시작될 때 인증서가 없다면 자동으로 발급을 시도합니다.
-    
-    *참고: 초기 인증서 발급이 실패하거나 수동으로 실행해야 할 경우 다음 명령어를 사용하세요:*
+    인증서 발급 성공 후 HTTPS 설정으로 전환:
     ```bash
-    docker compose run --rm certbot certonly --webroot --webroot-path=/usr/share/nginx/html --email your-email@example.com --agree-tos --no-eff-email -d your-domain.com
-    ```
-    인증서 발급 성공 후, `nginx/conf.d/default.conf`에서 SSL 인증서 관련 주석을 해제하고 Nginx를 재로드하세요 (스크립트가 자동으로 설정하지 않은 경우):
-    ```bash
+    cp nginx/conf.d/default.ssl.conf nginx/conf.d/default.conf
     docker compose exec nginx nginx -s reload
     ```
 
