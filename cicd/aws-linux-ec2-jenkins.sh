@@ -60,11 +60,11 @@ FOUND_PEM=$(find "$CURRENT_DIR" -maxdepth 1 -name "*.pem" | head -n 1)
 if [ -z "$FOUND_PEM" ]; then
     echo "No .pem file found in $CURRENT_DIR."
     echo "Do you want to generate a new SSH key for GitHub connection? (y/n)"
-    read -r GENERATE_KEY
+    read -r GENERATE_KEY < /dev/tty
     
     if [ "$GENERATE_KEY" = "y" ] || [ "$GENERATE_KEY" = "Y" ]; then
         echo "Enter your email address for the SSH key:"
-        read -r EMAIL
+        read -r EMAIL < /dev/tty
         
         if [ -z "$EMAIL" ]; then
             echo "Email is required. Skipping key generation."
@@ -83,7 +83,7 @@ if [ -z "$FOUND_PEM" ]; then
             echo "------------------------------------------------------------------"
             echo "=================================================================="
             echo "Press ENTER after you have registered the key on GitHub to continue..."
-            read -r WAIT_CONFIRM
+            read -r WAIT_CONFIRM < /dev/tty
             
             FOUND_PEM="$CURRENT_DIR/key.pem"
         fi
@@ -110,7 +110,7 @@ TARGET_DIR="$HOME/cicd" # 사용자 홈 디렉토리 하위에 생성
 
 # 5. Domain Configuration
 echo "Enter your domain name (e.g., jenkins.example.com):"
-read -r DOMAIN_NAME
+read -r DOMAIN_NAME < /dev/tty
 
 if [ -z "$DOMAIN_NAME" ]; then
     echo "Domain name is required. Using default 'your-domain.com'."
@@ -146,7 +146,7 @@ fi
 # SSH 키 생성 시 입력한 이메일이 있다면 사용, 없으면 물어봄
 if [ -z "$EMAIL" ]; then
     echo "Enter your email address for SSL certificate (Certbot):"
-    read -r EMAIL
+    read -r EMAIL < /dev/tty
 fi
 
 if [ -n "$EMAIL" ] && [ "$EMAIL" != "your-email@example.com" ]; then
